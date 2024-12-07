@@ -150,32 +150,52 @@ FORWARD _PROTOTYPE( int do_sys_setpri, (message *m_ptr));
 FORWARD _PROTOTYPE( int do_sys_getpri, (message *m_ptr));
 
 
-int do_sys_setpri(message *m_ptr)
+PRIVATE int do_sys_setpri(m_ptr)
+message *m_ptr;
+/* sets process group to a group in <1, 3> and a prio if group is not 1  */
 {
-  register pid_t pid = m_ptr->m1_i1;
+  register int pid = m_ptr->m1_i1;
   register int group = m_ptr->m1_i2;
   register int prio = m_ptr->m1_i3;
-  register struct proc* prc = proc_addr(pid);
-  prc->prc_group = group;
-  prc->pri_val = prio;
-  printf("pid = %d\n", prc->p_pid);
-  printf("group = %d\n", prc->prc_group);
-  printf("prio = %d\n", prc->pri_val);
-  return OK;
+  int i = 0;
+  if (group < 1 || group > 3)
+  {
+    return EPERM;
+  }
+  if(group==1)
+  {
+    prio=0;
+  }
+  for (i = 0; i < NR_TASKS+NR_PROCS; i++)
+  {
+    if (proc[i].p_pid==pid)
+    {
+      proc[i].prc_group = group;
+      proc[i].pri_val = prio;
+      return OK;
+    }
+  }
+  printf("Not found in set\n");
+  return ESRCH;
 }
 
-int do_sys_getpri(message *m_ptr)
+PRIVATE int do_sys_getpri(m_ptr)
+message *m_ptr;
+/* get group and priority value of a process */
 {
-  register pid_t pid = m_ptr->m1_i1;
-  register struct proc* prc;
-  printf("pid = %d\n", pid);
-  prc = proc_addr(pid);
-  m_ptr->m1_i1 = prc->prc_group;
-  m_ptr->m1_i2 = prc->pri_val;
-  printf("pid = %d\n", pid);
-  printf("prc->prc_group = %d\n", prc->prc_group);
-  printf("prc->pri_val = %d\n", prc->pri_val);
-  return OK;
+  register int pid = m_ptr->m1_i1;
+  int i = 0;
+  for (i = 0; i < NR_TASKS+NR_PROCS; i++)
+  {
+    if (proc[i].p_pid==pid)
+    {
+      m_ptr->m1_i1 = proc[i].prc_group;
+      m_ptr->m1_i2 = proc[i].pri_val;
+      return OK;
+    }
+  }
+  printf("Not found in get\n");
+  return ESRCH;
 }
 
 
@@ -268,7 +288,16 @@ register message *m_ptr;	/* pointer to request message */
   rpc->sys_time = 0;
   rpc->child_utime = 0;
   rpc->child_stime = 0;
-  rpc->prc_group = rpp->prc_group;
+  /* make sure the group is in <1, 3>, child will get the group of parent and priority 0 */
+  if (rpp->prc_group < 1 || rpp->prc_group >3)
+  {
+    return EPERM;
+  }
+  if (rpp->prc_group != 0){
+  rpc->prc_group = rpp->prc_group;}
+  else{
+    rpc->prc_group = 1;
+  }
   rpc->pri_val = 0; 
   return(OK);
 }

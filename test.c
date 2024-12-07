@@ -5,22 +5,35 @@
 
 int main(int args, char * argv[])
 {
+  /* the most general test, firtly processes of group 1 will be created, then 2, then 3, so they should be executed in order 1->2->3, and each according with their scheduling arguments*/
   message m;
-  pid_t pid;
-  pid_t pid2;
   int result;
   int i = 0;
   int j = 0;
-  printf("m.m1_i1 = %d\n", m.m1_i1);
-  printf("getpid() = %d\n", getpid());
+  int n = 0;
+  pid_t pid;
+  m.m1_i1 = getpid();
+  m.m1_i2 = 1;
+  m.m1_i3 = 0;
+  result = _syscall(MM, SETPRI, &m);
+  for (n = 0; n < 5; n++)
+  {
+    m.m1_i1 = getpid();
+    m.m1_i2 = 1;
+    m.m1_i3 = 0;
+    _syscall(MM, SETPRI, &m);
+    pid = fork();
+    if (pid == 0)
+    {
+      _syscall(MM, SETPRI, &m);
+      for (j = 0; j<100000000; j++);
+      return 0;
+    }
+  }
   m.m1_i1 = getpid();
   m.m1_i2 = 2;
   m.m1_i3 = 3;
-  result = _syscall(MM, SETPRI, &m);
-  m.m1_i1 = getpid();
-  _syscall(MM, GETPRI, &m);
-  printf("m.m1_i1 = %d\n", m.m1_i1);
-  printf("m.m1_i2 = %d\n", m.m1_i2);
+  _syscall(MM, SETPRI, &m);
   for (i = 0; i < 5; i++)
   {
     pid = fork();
@@ -28,24 +41,29 @@ int main(int args, char * argv[])
     {
       m.m1_i1 = getpid();
       m.m1_i2 = 2;
-      m.m1_i3 = 0;
+      m.m1_i3 = i;
       _syscall(MM, SETPRI, &m);
-      m.m1_i1 = getpid();
-      _syscall(MM, GETPRI, &m);
-      printf("new group %d\n", m.m1_i1);
-      printf("new prio %d\n", m.m1_i2);
       for (j = 0; j < 100000000; j++);
       return 0;
     }
   }
-  m.m1_i1 = pid;
-  m.m1_i2 = 2;
-  m.m1_i3 = 3;
-  result = _syscall(MM, SETPRI, &m);
-  m.m1_i1 = pid;
-  result = _syscall(MM, GETPRI, &m);
-  printf("group = %d\n", m.m1_i1);
-  printf("prio = %d\n", m.m1_i2);
+  m.m1_i1 = getpid();
+  m.m1_i2 = 3;
+  m.m1_i3 = 0;
+  _syscall(MM, SETPRI, &m);
+  for(i = 0; i < 5; i++)
+  {
+    pid = fork();
+    if (pid == 0)
+    {
+      m.m1_i1 = getpid();
+      m.m1_i2 = 3;
+      m.m1_i3 = 7-i;
+      _syscall(MM, SETPRI, &m);
+      for(j = 0; j<100000000; j++);
+      return 0;
+    }
+  }
   return 0;
 }
 

@@ -182,21 +182,21 @@ PRIVATE void mm_init()
 
 PUBLIC int do_setpri()
 {
-  message m;
-  m.m1_i1 = mm_in.m1_i1; /* which process */
-  m.m1_i2 = mm_in.m1_i2; /* to which group */
-  m.m1_i3 = mm_in.m1_i3; /* priority value  */
-  _taskcall(SYSTASK, SYS_SETPRI, &m);
-  return OK;
+  /*  calls setpri taskcall  */
+  message m = mm_in;
+  int res;
+  res = _taskcall(SYSTASK, SYS_SETPRI, &m);
+  return res;
 }
 
 PUBLIC int do_getpri()
 {
+  /* calss getpri taskcall   */
   message m;
   int res;
-  m.m1_i1 = mm_in.m1_i1;
-  _taskcall(SYSTASK, SYS_GETPRI, &m);
+  m = mm_in;
+  res = _taskcall(SYSTASK, SYS_GETPRI, &m);
   mproc[mm_in.m_source].mp_reply.m1_i1 = m.m1_i1;
   mproc[mm_in.m_source].mp_reply.m1_i2 = m.m1_i2;
-  return OK;
+  return res;
 }

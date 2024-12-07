@@ -361,23 +361,27 @@ register struct proc *rp;	/* this process is now runnable */
 	rp->p_nextready = NIL_PROC;
 	return;
   }
-  /* Add user process to the front of the queue.  (Is a bit fairer to I/O
-   * bound processes.)
-   */
+  /* if process group is higher than the group of head (or equal to 1) put it at the beggining
+   * otheriwse put it at the right place in the ready queue */
   if (rdy_head[USER_Q] == NIL_PROC){
 	  rdy_tail[USER_Q] = rp;
     rp->p_nextready = NIL_PROC;
     rdy_head[USER_Q] = rp;
     return;
   }
-  if (rp->prc_group > rdy_head[USER_Q]->prc_group || rp->prc_group == 1){
+  if (rp->prc_group <= rdy_head[USER_Q]->prc_group || rp->prc_group == 1){
     rp->p_nextready = rdy_head[USER_Q];
     rdy_head[USER_Q] = rp;
     return;
   }
-  while (curr_proc->p_nextready->prc_group <= rp->prc_group && curr_proc->p_nextready != NIL_PROC && curr_proc!=NIL_PROC && rp->pri_val <= curr_proc->pri_val)
+  curr_proc = rdy_head[USER_Q];
+  while (curr_proc->p_nextready->prc_group < rp->prc_group && curr_proc->p_nextready != NIL_PROC && curr_proc!=NIL_PROC)
   {
     curr_proc = curr_proc->p_nextready;
+  }
+  if (curr_proc->p_nextready==NIL_PROC)
+  {
+    rdy_tail[USER_Q]==curr_proc;
   }
   rp->p_nextready = curr_proc->p_nextready;
   curr_proc->p_nextready = rp;
@@ -448,20 +452,11 @@ register struct proc *rp;	/* this process is no longer runnable */
  *				sched					     * 
  *===========================================================================*/
 PRIVATE void sched()
+/* checks what group the head process belongs to and then starts the right scheduling algorithm for 
+ * that group, uses correct_tail to fix the tail pointer, also calls control_print() to make testing easier*/
 {
-/* The current process has run too long.  If another low priority (user)
- * process is runnable, put the current process on the end of the user queue,
- * possibly promoting another user to head of the queue.
- */
   struct proc* current_proc = rdy_head[USER_Q];
-  control_print();
   printf("Before\n");
-
-  /* One or more user processes queued. */
-  /*rdy_tail[USER_Q]->p_nextready = rdy_head[USER_Q];
-  rdy_tail[USER_Q] = rdy_head[USER_Q];
-  rdy_head[USER_Q] = rdy_head[USER_Q]->p_nextready;
-  rdy_tail[USER_Q]->p_nextready = NIL_PROC;*/
   control_print();
   if (rdy_head[USER_Q]->prc_group == 1){
     round_robin(1);
@@ -469,23 +464,37 @@ PRIVATE void sched()
   else if (rdy_head[USER_Q]->prc_group == 2)
   {
     old_first(2);
-  }/*
+  }
   else if (rdy_head[USER_Q]->prc_group == 3)
   {
     sjb(3);
-  }*/
+  }
+  correct_tail();
   printf("After\n");
   control_print();
   pick_proc();
 }
 
+PRIVATE void correct_tail()
+/*  makes sure rdy_tail[USER_Q] pointer is in the right place */
+{
+  struct proc* curr_proc = rdy_head[USER_Q];
+  while(curr_proc->p_nextready!=NIL_PROC)
+  {
+    curr_proc=curr_proc->p_nextready;
+  }
+  rdy_tail[USER_Q]=curr_proc;
+  return;
+}
 PRIVATE struct proc* find_last_for_group(int group)
+/*  finds last process of the given process in the ready queue  */
+
 {
   struct proc* last_proc = rdy_head[USER_Q];
   if (last_proc == NIL_PROC || last_proc->p_nextready==NIL_PROC){
     return last_proc;
   }
-  while(last_proc->p_nextready->prc_group <= group && last_proc->p_nextready!=NIL_PROC && last_proc!=rdy_tail[USER_Q])
+  while(last_proc->p_nextready->prc_group <= group && last_proc->p_nextready!=NIL_PROC && last_proc!=NIL_PROC)
   {
     last_proc = last_proc->p_nextready;
   }
@@ -493,12 +502,15 @@ PRIVATE struct proc* find_last_for_group(int group)
 }
 
 PRIVATE void control_print()
+/* goes over the ready queue of user processes and prints pids, groups and priorities of each process   */
 {
   struct proc* proc = rdy_head[USER_Q];
   if (proc == NIL_PROC)
   {
     return;
   }
+  printf("rdy_head[USER_Q] = %d\n", rdy_head[USER_Q]->p_pid);
+  printf("rdy_tail[USER_Q] = %d\n", rdy_tail[USER_Q]->p_pid);
   do
   {
     printf("proc->p_pid = %d group : %d prio: %d\n", proc->p_pid, proc->prc_group, proc->pri_val);
@@ -508,11 +520,11 @@ PRIVATE void control_print()
 }
 
 PRIVATE void round_robin(int grp)
+/* takes the first process and puts it at the end of the queue  */
 {
   struct proc* last_proc = find_last_for_group(grp);
   struct proc*  next_proc = last_proc->p_nextready;
   if (last_proc == NIL_PROC){
-    printf("NILPROCAA\n");
     return;
   }
   if(last_proc == rdy_tail[USER_Q])
@@ -529,19 +541,63 @@ PRIVATE void round_robin(int grp)
 }
 
 PRIVATE void old_first(int grp)
+/*  increments all priorities of processes of group grp and then puts the oldest one and the head */
 {
   struct proc* last_proc = find_last_for_group(grp);
   struct proc* curr_proc = rdy_head[USER_Q];
-  while(curr_proc != last_proc->p_nextready)
+  struct proc* bef_best_proc = rdy_head[USER_Q];
+  struct proc* best_proc = rdy_head[USER_Q];
+  printf("last_proc->p_pid = %d\n", last_proc->p_pid);
+  curr_proc = rdy_head[USER_Q];
+  curr_proc->pri_val++;
+  while (curr_proc->p_nextready != last_proc->p_nextready)
   {
-    curr_proc->pri_val++;
+    if (curr_proc->p_nextready->pri_val > best_proc->pri_val)
+    {
+      bef_best_proc = curr_proc;
+      best_proc = curr_proc->p_nextready;
+    }
+    curr_proc->p_nextready->pri_val++;
     curr_proc = curr_proc->p_nextready;
+  }
+  if (best_proc != rdy_head[USER_Q]){
+    bef_best_proc->p_nextready = best_proc->p_nextready;
+    best_proc->p_nextready = rdy_head[USER_Q];
+    rdy_head[USER_Q] = best_proc;
+    if (bef_best_proc->p_nextready == NIL_PROC)
+    {
+      rdy_tail[USER_Q] == bef_best_proc;
+    }
   }
   return;
 }
 
 PRIVATE void sjb(int grp)
+/*  puts the process og group grp with lower priorioty value at the head  */
 {
+  struct proc* last_proc = find_last_for_group(grp);
+  struct proc* curr_proc = rdy_head[USER_Q];
+  struct proc* best_proc = rdy_head[USER_Q];
+  struct proc* bef_best_proc = rdy_head[USER_Q];
+  curr_proc = rdy_head[USER_Q];
+  while (curr_proc->p_nextready != last_proc->p_nextready)
+  {
+    if (curr_proc->p_nextready->pri_val < best_proc->pri_val)
+    {
+      bef_best_proc = curr_proc;
+      best_proc = curr_proc->p_nextready;
+    }
+    curr_proc = curr_proc->p_nextready;
+  }
+  if (best_proc != rdy_head[USER_Q]){
+    bef_best_proc->p_nextready = best_proc->p_nextready;
+    best_proc->p_nextready = rdy_head[USER_Q];
+    rdy_head[USER_Q] = best_proc;
+    if (bef_best_proc->p_nextready == NIL_PROC)
+    {
+      rdy_tail[USER_Q] == bef_best_proc;
+    }
+  }
   return;
 }
 
