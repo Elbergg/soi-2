@@ -478,7 +478,9 @@ PRIVATE void sched()
 /* checks what group the head process belongs to and then starts the right scheduling algorithm for 
  * that group, uses correct_tail to fix the tail pointer, also calls control_print() to make testing easier*/
 {
-  struct proc* current_proc = rdy_head[USER_Q];
+  if (rdy_head[USER_Q]==NIL_PROC){
+    return;
+  }
   printf("Before\n");
   control_print();
   if (rdy_head[USER_Q]->prc_group == 1){

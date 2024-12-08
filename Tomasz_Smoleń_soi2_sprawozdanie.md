@@ -16,13 +16,15 @@ Do struktury procesu  w proc.h dodałem pole prc_group oraz pri_val:
 
 - pri_val to pole które informuje o wartości priorytetu wewnątrz grupy, w grupie drugiej będzie to wiek procesu i na poczatku będą szły procesu o jak największej tej wartości, będzie ona też rosnąć z czasem, w grupie 3 najpierw będą się wykonywały procesy z jak najmniejszą wartością pola pri_val ponieważ reprezentuje tam ona założony czas wykonywania a algorytm to sjb.
 
-Planista patrzy na grupe procesu na wskaźniku rdy_head[USER_Q] po czym uruchamia odpowiedni algorytm dla tej grupy.
+Planista (sched())patrzy na grupe procesu na wskaźniku rdy_head[USER_Q] po czym uruchamia odpowiedni algorytm dla tej grupy.
+
+Upewniam się, że proces trafia na odpowiednie miejsce kolejki przy podczas wykonywania funkcji ready().
 
 Dodatkowo dodałem syscalle setpri oraz getpri do ustawiania i sprawdzania wartości grup i priorytetów procesów, korzystają one z taskcalli sys_setpri o sys_getpri.
 
 #### Grupa 1
 
-Algorytm szeregowania round robin, procesy będą powoli przesuwać się z tyłu kolejki jedynek na początek, po czym znowu trafiać na koniec, upewniam się, że proces trafia na odpowiednie miejsce kolejki przy podczas wykonywania funkcji ready()
+Algorytm szeregowania round robin, procesy będą powoli przesuwać się z tyłu kolejki jedynek na początek, po czym trafiać na koniec pozwalając kolejnym procesom się wykonać. 
 
 Przykład działania round robin:
 
