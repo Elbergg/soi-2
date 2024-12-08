@@ -61,6 +61,7 @@ Testy wykonuje, wywołując fork() i ustawiając priorytety/grupy procesom za po
 
 Poniższe zrzuty ekranu są screenami z nagrania wszystkich testów, które łącznie wykonują się ok. 45 sekund. Wywołuje je wszystkie run_tests.sh, a każdy z nich jest osobnym programem napisanym w C.
 
+W testach też wykorzystuje fakt, że nowe procesy są tworzone z grupą parenta (do_fork())
 #### test.c
 
 Ten test jest najbardziej ogólnym ze wszystkich, po prostu na początku tworzy procesy o grupie 1, potem 2, potem 3.
