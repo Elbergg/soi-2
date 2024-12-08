@@ -375,7 +375,21 @@ register struct proc *rp;	/* this process is now runnable */
     return;
   }
   curr_proc = rdy_head[USER_Q];
-  while (curr_proc->p_nextready->prc_group <= rp->prc_group && curr_proc->p_nextready != NIL_PROC && curr_proc!=NIL_PROC)
+  if (curr_proc->prc_group == rp->prc_group && rp->prc_group == 2 && curr_proc->pri_val < rp->pri_val)
+  {
+    rp->p_nextready = rdy_head[USER_Q];
+    rdy_head[USER_Q] = rp;
+    return;
+  }
+
+  if (curr_proc->prc_group == rp->prc_group && rp->prc_group == 3 && curr_proc->pri_val > rp->pri_val)
+  {
+    rp->p_nextready = rdy_head[USER_Q];
+    rdy_head[USER_Q] = rp;
+    return;
+  }
+  curr_proc = rdy_head[USER_Q];
+  while (curr_proc ->p_nextready != NIL_PROC && curr_proc->p_nextready->prc_group <= rp->prc_group)
   {
     if (rp->prc_group == 2 && curr_proc->p_nextready->prc_group == 2 && rp->pri_val > curr_proc->p_nextready->pri_val)
     {
@@ -390,7 +404,7 @@ register struct proc *rp;	/* this process is now runnable */
   }
   if (curr_proc->p_nextready==NIL_PROC)
   {
-    rdy_tail[USER_Q]==curr_proc;
+    rdy_tail[USER_Q]=curr_proc;
   }
   rp->p_nextready = curr_proc->p_nextready;
   curr_proc->p_nextready = rp;

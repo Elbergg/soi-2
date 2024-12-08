@@ -289,16 +289,17 @@ register message *m_ptr;	/* pointer to request message */
   rpc->child_utime = 0;
   rpc->child_stime = 0;
   /* make sure the group is in <1, 3>, child will get the group of parent and priority 0 */
-  if (rpp->prc_group < 1 || rpp->prc_group >3)
+  if (rpp->prc_group < 1 || rpp->prc_group > 3)
   {
     return EPERM;
   }
   if (rpp->prc_group != 0){
-  rpc->prc_group = rpp->prc_group;}
+    rpc->prc_group = rpp->prc_group;
+  }
   else{
     rpc->prc_group = 1;
   }
-  rpc->pri_val = 0; 
+  rpc->pri_val = 0;
   return(OK);
 }
 

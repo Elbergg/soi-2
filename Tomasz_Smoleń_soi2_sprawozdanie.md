@@ -8,9 +8,9 @@ W celu wykonania zadania zaimplementowałem trzy grupy procesów w systemie mini
 
 Udało mi się to uzyskać za pomocą stworzenia trzech logicznych kolejek wewnątrz jednej fizycznej kolejky USER_Q, zawsze w niej na początku będa procesy o grupie 1, potem 2, potem 3:
 
-![](assets/2024-12-08-19-09-52-image.png)
+![](assets/2024-12-08-22-20-26-image.png)
 
-Do struktury procesu dodałem pole prc_group oraz pri_val:
+Do struktury procesu  w proc.h dodałem pole prc_group oraz pri_val:
 
 - prc_group odpowiada za grupe (1,2,3)
 
@@ -49,6 +49,7 @@ Teoretycznie dzięki funkcji ready na początku kolejki dwójek zawsze i tak pow
 Algorytm shortest job first
 
 Grupa trzecia działa podobnie jak grupa druga, tylko, że wartości nie są inkrementowane, a procesy są ustawiane rosnąco, a nie malejąco.
+Pri val w tym przypadku reprezentuje zakładany czas wykonania programu, trzeba go ustawić syscallem setpri().
 
 Przykład:
 
@@ -102,7 +103,7 @@ Chyba najciekawszy test, na zmiane tworzone są procesy o grupach 1,2,3. Sprawdz
 
 Działa:
 
-![](assets/2024-12-08-19-45-24-image.png)
+![](assets/2024-12-08-22-20-14-image.png)
 
 ### Uwagi:
 
@@ -118,4 +119,4 @@ Działa:
 
 - w sys_setpri i sys_getpri szukam procesu zwyczajnie iterujac po tablicy procesów, jeśli nie znajde zwracam błąd.
   
-  ajpierw tworzone są dwójki, a potem jedynki, dwójki i jedynki, badamy czy pomimo tego kolejka dalej będzie się zachowywała odpowiednio:
+  

@@ -25,7 +25,6 @@ int main(int args, char * argv[])
     pid = fork();
     if (pid == 0)
     {
-      _syscall(MM, SETPRI, &m);
       for (j = 0; j<100000000; j++);
       return 0;
     }
