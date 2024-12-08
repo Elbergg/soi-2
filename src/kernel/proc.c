@@ -369,14 +369,23 @@ register struct proc *rp;	/* this process is now runnable */
     rdy_head[USER_Q] = rp;
     return;
   }
-  if (rp->prc_group <= rdy_head[USER_Q]->prc_group || rp->prc_group == 1){
+  if (rp->prc_group < rdy_head[USER_Q]->prc_group || rp->prc_group == 1){
     rp->p_nextready = rdy_head[USER_Q];
     rdy_head[USER_Q] = rp;
     return;
   }
   curr_proc = rdy_head[USER_Q];
-  while (curr_proc->p_nextready->prc_group < rp->prc_group && curr_proc->p_nextready != NIL_PROC && curr_proc!=NIL_PROC)
+  while (curr_proc->p_nextready->prc_group <= rp->prc_group && curr_proc->p_nextready != NIL_PROC && curr_proc!=NIL_PROC)
   {
+    if (rp->prc_group == 2 && curr_proc->p_nextready->prc_group == 2 && rp->pri_val > curr_proc->p_nextready->pri_val)
+    {
+      break;
+    }
+
+    if (rp->prc_group == 3 && curr_proc->p_nextready->prc_group == 3 && rp->pri_val < curr_proc->p_nextready->pri_val)
+    {
+      break;
+    }
     curr_proc = curr_proc->p_nextready;
   }
   if (curr_proc->p_nextready==NIL_PROC)
